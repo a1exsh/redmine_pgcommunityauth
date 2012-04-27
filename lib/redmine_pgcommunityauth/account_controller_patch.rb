@@ -5,32 +5,22 @@ module RedminePgcommunityauth
   module AccountControllerPatch
     unloadable
 
+    class AuthTokenExpiredError < RuntimeError; end
+    class InvalidAuthTokenError < RuntimeError; end
+
     # GET /pgcommunityauth
     def pgcommunityauth
       data = (params[:d] || "").tr('-_', '+/')
       iv   = (params[:i] || "").tr('-_', '+/')
 
-      begin
-        qs = aes_decrypt(data, iv).rstrip
-      rescue
-        flash[:error] = "Invalid PG communityauth message received."
-        raise
-      end
-
+      qs = aes_decrypt(data, iv).rstrip
       auth = Rack::Utils.parse_query(qs)
 
       # check auth hash for mandatory keys
-      auth_keys = auth.keys
-      if %w(t u f l e).any?{ |x| !auth_keys.include?(x) }
-        flash[:error] = "Invalid PG communityauth data received."
-        raise
-      end
+      raise InvalidAuthTokenError.new unless %w(t u f l e).all?{ |x| auth.keys.include?(x) }
 
       # check auth token timestamp
-      if (auth['t'] || 0).to_i < Time.now.to_i - 10
-        flash[:error] = "PG community auth token expired."
-        raise
-      end
+      raise AuthTokenExpiredError.new if auth['t'].to_i < Time.now.to_i - 10
 
       # prepare attrs for create or update
       attrs = {
@@ -49,8 +39,12 @@ module RedminePgcommunityauth
 
       params[:back_url] = auth['su'] || pgcommunityauth_settings[:default_url]
       successful_authentication(user)
-    rescue
-      # render default template
+    rescue OpenSSL::Cipher::CipherError
+      flash[:error] = "Invalid PG communityauth message received."
+    rescue InvalidAuthTokenError
+      flash[:error] = "Invalid PG communityauth token received."
+    rescue AuthTokenExpiredError
+      flash[:error] = "PG community auth token expired."
     end
 
     private
