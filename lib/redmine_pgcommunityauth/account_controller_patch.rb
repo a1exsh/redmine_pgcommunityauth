@@ -50,14 +50,16 @@ module RedminePgcommunityauth
     private
 
     def aes_decrypt(data, iv)
-      cipher = OpenSSL::Cipher.new('AES-256-CBC')
+      key = Base64.decode64(pgcommunityauth_settings[:cipher_key])
+
+      cipher = OpenSSL::Cipher.new("AES-#{key.size*8}-CBC")
       cipher.decrypt
 
       # this is the key point here, otherwise we could use
       # AES.decrypt()
       cipher.padding = 0
 
-      cipher.key = Base64.decode64(pgcommunityauth_settings[:cipher_key])
+      cipher.key = key
       cipher.iv  = Base64.decode64(iv)
       cipher.update(Base64.decode64(data)) + cipher.final
     end
