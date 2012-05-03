@@ -19,8 +19,8 @@ module RedminePgcommunityauth
       # check auth hash for mandatory keys
       raise InvalidAuthTokenError.new unless %w(t u f l e).all?{ |x| auth.keys.include?(x) }
 
-      # check auth token timestamp
-      raise AuthTokenExpiredError.new if auth['t'].to_i < Time.now.to_i - 10
+      # check auth token timestamp: issued 10 seconds ago or less
+      raise AuthTokenExpiredError.new unless Time.now.to_i <= auth['t'].to_i + 10
 
       # prepare attrs for create or update
       attrs = {
