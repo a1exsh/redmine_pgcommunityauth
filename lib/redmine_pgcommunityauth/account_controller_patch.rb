@@ -8,8 +8,29 @@ module RedminePgcommunityauth
     class AuthTokenExpiredError < RuntimeError; end
     class InvalidAuthTokenError < RuntimeError; end
 
+    def self.included(base)
+      base.class_eval do
+        alias_method_chain :login,  :pgcommunityauth
+        alias_method_chain :logout, :pgcommunityauth
+      end
+    end
+
+    def login_with_pgcommunityauth
+      redirect_to pgcommunityauth_login_url
+    end
+
+    def logout_with_pgcommunityauth
+      logout_user
+      redirect_to pgcommunityauth_logout_url
+    end
+
     # GET /pgcommunityauth
     def pgcommunityauth
+      if params[:s] == 'logout'
+        flash[:notice] = "Successfully logged out from PG community sites."
+        return
+      end
+
       data = (params[:d] || "").tr('-_', '+/')
       iv   = (params[:i] || "").tr('-_', '+/')
 
@@ -48,6 +69,22 @@ module RedminePgcommunityauth
     end
 
     private
+
+    def pgcommunityauth_settings
+      Setting['plugin_redmine_pgcommunityauth']
+    end
+
+    def pgcommunityauth_base_url
+      "https://www.postgresql.org/account/auth/#{pgcommunityauth_settings[:authsite_id]}"
+    end
+
+    def pgcommunityauth_login_url
+      "#{pgcommunityauth_base_url}/"
+    end
+
+    def pgcommunityauth_logout_url
+      "#{pgcommunityauth_base_url}/logout/"
+    end
 
     def aes_decrypt(data, iv)
       key = Base64.decode64(pgcommunityauth_settings[:cipher_key])
