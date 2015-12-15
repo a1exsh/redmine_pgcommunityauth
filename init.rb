@@ -7,7 +7,7 @@ Redmine::Plugin.register :redmine_pgcommunityauth do
   author 'Alex Shulgin <ash@commandprompt.com>'
   description ''
   version '0.1.0'
-  requires_redmine '3.0.0'
+  requires_redmine '2.5.2'
 
   settings :default => {}, :partial => 'settings/redmine_pgcommunityauth_settings'
 end
