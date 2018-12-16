@@ -1,3 +1,5 @@
 = pgcommunityauth
 
-Description goes here
+Integrates redmine.postgresql.org with Postgres community login system.
+
+Last known to work with Redmine-3.3, as shipped in Debian stable (Stretch).
