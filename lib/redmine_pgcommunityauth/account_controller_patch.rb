@@ -43,20 +43,12 @@ module RedminePgcommunityauth
       # check auth token timestamp: issued 10 seconds ago or less
       raise AuthTokenExpiredError.new unless Time.now.to_i <= auth['t'].to_i + 10
 
-      # prepare attrs for create or update
-      attrs = {
-        :firstname => auth['f'],
-        :lastname => auth['l'],
-        :mail => auth['e']
-      }
-      if user = User.find_by_login(auth['u'])
-        user.update_attributes! attrs
-      else
-        user = User.new(attrs)
-        # can't pass protected attr in new/create
-        user.login = auth['u']
-        user.save!
-      end
+      user = User.find_by_login(auth['u']) || User.new
+      user.login = auth['u']
+      user.firstname = auth['f']
+      user.lastname = auth['l']
+      user.mail = auth['e']
+      user.save!
 
       params[:back_url] = auth['su'] || pgcommunityauth_settings[:default_url]
       successful_authentication(user)
