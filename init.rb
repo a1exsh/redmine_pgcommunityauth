@@ -1,4 +1,6 @@
 Rails.application.config.after_initialize do
+  User.send(:include, RedminePgcommunityauth::UserPatch)
+  MyController.send(:include, RedminePgcommunityauth::MyControllerPatch)
   AccountController.send(:include, RedminePgcommunityauth::AccountControllerPatch)
 end
 
