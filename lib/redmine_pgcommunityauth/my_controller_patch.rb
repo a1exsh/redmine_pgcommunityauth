@@ -4,7 +4,7 @@ module RedminePgcommunityauth
 
     def self.included(base)
       base.class_eval do
-        alias_method_chain :account, :pgcommunityauth
+        alias_method_chain :password, :pgcommunityauth
       end
     end
 
