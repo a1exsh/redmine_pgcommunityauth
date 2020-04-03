@@ -8,18 +8,11 @@ module RedminePgcommunityauth
     class AuthTokenExpiredError < RuntimeError; end
     class InvalidAuthTokenError < RuntimeError; end
 
-    def self.included(base)
-      base.class_eval do
-        alias_method_chain :login,  :pgcommunityauth
-        alias_method_chain :logout, :pgcommunityauth
-      end
-    end
-
-    def login_with_pgcommunityauth
+    def login
       redirect_to pgcommunityauth_login_url
     end
 
-    def logout_with_pgcommunityauth
+    def logout
       logout_user
       redirect_to pgcommunityauth_logout_url
     end
