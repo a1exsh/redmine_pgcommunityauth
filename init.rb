@@ -1,6 +1,6 @@
-Rails.application.config.after_initialize do
-  MyController.prepend(RedminePgcommunityauth::MyControllerPatch)
-  AccountController.prepend(RedminePgcommunityauth::AccountControllerPatch)
+ActiveSupport::Reloader.to_prepare do
+  require_dependency 'redmine_pgcommunityauth/my_controller_patch.rb'
+  require_dependency 'redmine_pgcommunityauth/account_controller_patch.rb'
 end
 
 Redmine::Plugin.register :redmine_pgcommunityauth do

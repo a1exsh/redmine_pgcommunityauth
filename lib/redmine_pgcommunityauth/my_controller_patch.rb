@@ -8,3 +8,6 @@ module RedminePgcommunityauth
     end
   end
 end
+
+# use prepend to override existing methods:
+MyController.send(:prepend, RedminePgcommunityauth::MyControllerPatch)
