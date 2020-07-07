@@ -1,3 +1,5 @@
 = pgcommunityauth
 
-Integrates redmine.postgresql.org with Postgres community login system.
+Integrates redmine.postgresql.org with Postgres {community
+login}[https://github.com/postgres/pgweb/blob/master/docs/authentication.rst]
+system.

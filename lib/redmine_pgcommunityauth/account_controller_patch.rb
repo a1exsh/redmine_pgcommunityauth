@@ -9,7 +9,14 @@ module RedminePgcommunityauth
     class InvalidAuthTokenError < RuntimeError; end
 
     def login
-      redirect_to pgcommunityauth_login_url
+      url = pgcommunityauth_login_url
+
+      back_url = params[:back_url]
+      if back_url.present?
+        url += "?d=" + encrypt_login_data(back_url)
+      end
+
+      redirect_to url
     end
 
     def logout
@@ -24,10 +31,10 @@ module RedminePgcommunityauth
         return
       end
 
-      data = (params[:d] || "").tr('-_', '+/')
-      iv   = (params[:i] || "").tr('-_', '+/')
+      iv   = Base64.urlsafe_decode64(params[:i] || "")
+      data = Base64.urlsafe_decode64(params[:d] || "")
 
-      qs = aes_decrypt(data, iv).rstrip
+      qs = aes_decrypt(pgcommunityauth_cipher_key, iv, data).rstrip
       auth = Rack::Utils.parse_query(qs)
 
       # check auth hash for mandatory keys
@@ -43,7 +50,15 @@ module RedminePgcommunityauth
       user.mail = auth['e']
       user.save!
 
-      params[:back_url] = auth['su'] || pgcommunityauth_settings[:default_url]
+      login_data = auth['d']
+      if login_data.present?
+        decoded_qs = decrypt_login_data(login_data)
+        decoded_data = Rack::Utils.parse_query(decoded_qs)
+        params[:back_url] = decoded_data['r']
+      else
+        params[:back_url] = pgcommunityauth_settings[:default_url]
+      end
+
       successful_authentication(user)
     rescue OpenSSL::Cipher::CipherError
       flash[:error] = "Invalid PG communityauth message received."
@@ -71,19 +86,65 @@ module RedminePgcommunityauth
       "#{pgcommunityauth_base_url}/logout/"
     end
 
-    def aes_decrypt(data, iv)
-      key = Base64.decode64(pgcommunityauth_settings[:cipher_key])
+    def pgcommunityauth_cipher_key
+      Base64.decode64(pgcommunityauth_settings[:cipher_key])
+    end
 
-      cipher = OpenSSL::Cipher.new("AES-#{key.size*8}-CBC")
+    def aes_cipher(key_size)
+      #
+      # Use OpenSSL to set the padding, otherwise we could use AES.decrypt():
+      #
+      OpenSSL::Cipher.new("AES-#{key_size*8}-CBC")
+    end
+
+    def aes_encrypt(key, iv, data)
+      cipher = aes_cipher(key.size)
+      cipher.encrypt
+
+      cipher.padding = 0
+      cipher.key     = key
+      cipher.iv      = iv
+      cipher.update(data) + cipher.final
+    end
+
+    def aes_decrypt(key, iv, data)
+      cipher = aes_cipher(key.size)
       cipher.decrypt
 
-      # this is the key point here, otherwise we could use
-      # AES.decrypt()
       cipher.padding = 0
+      cipher.key     = key
+      cipher.iv      = iv
+      cipher.update(data) + cipher.final
+    end
 
-      cipher.key = key
-      cipher.iv  = Base64.decode64(iv)
-      cipher.update(Base64.decode64(data)) + cipher.final
+    def login_data_cipher_key
+      # TODO: haven't found a away to use the Rails' secret key base or token
+      pgcommunityauth_cipher_key
+    end
+
+    def encrypt_login_data(back_url)
+      block_length = 16
+      iv = OpenSSL::Random.random_bytes(block_length)
+
+      # TODO: why do we include time, if we already have a random salt in IV?
+      data = "t=#{Time.now.to_i}&r=#{CGI.escape(back_url)}"
+
+      padded_data = right_pad_to_block_length(data, block_length)
+      cipher = aes_encrypt(login_data_cipher_key, iv, padded_data)
+
+      "#{Base64.urlsafe_encode64(iv)}$#{Base64.urlsafe_encode64(cipher)}"
+    end
+
+    def right_pad_to_block_length(data, blen)
+      data + ' '*(blen - data.size % blen)
+    end
+
+    def decrypt_login_data(data)
+      parts  = data.split('$')
+      iv     = Base64.urlsafe_decode64(parts[0])
+      cipher = Base64.urlsafe_decode64(parts[1])
+
+      aes_decrypt(login_data_cipher_key, iv, cipher).rstrip
     end
   end
 end
