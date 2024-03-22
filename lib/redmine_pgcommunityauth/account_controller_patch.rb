@@ -56,7 +56,7 @@ module RedminePgcommunityauth
         decoded_data = Rack::Utils.parse_query(decoded_qs)
         params[:back_url] = decoded_data['r']
       else
-        params[:back_url] = pgcommunityauth_settings[:default_url]
+        params[:back_url] = pgcommunityauth_settings['default_url']
       end
 
       successful_authentication(user)
@@ -75,7 +75,7 @@ module RedminePgcommunityauth
     end
 
     def pgcommunityauth_base_url
-      "https://www.postgresql.org/account/auth/#{pgcommunityauth_settings[:authsite_id]}"
+      "https://www.postgresql.org/account/auth/#{pgcommunityauth_settings['authsite_id']}"
     end
 
     def pgcommunityauth_login_url
@@ -87,7 +87,7 @@ module RedminePgcommunityauth
     end
 
     def pgcommunityauth_cipher_key
-      Base64.decode64(pgcommunityauth_settings[:cipher_key])
+      Base64.decode64(pgcommunityauth_settings['cipher_key'])
     end
 
     def aes_cipher(key_size)
