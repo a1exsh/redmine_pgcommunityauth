@@ -7,8 +7,8 @@ Redmine::Plugin.register :redmine_pgcommunityauth do
   name 'Redmine Pgcommunityauth plugin'
   author 'Alex Shulgin <alex.shulgin@gmail.com>'
   description ''
-  version '0.4.0'
-  requires_redmine :version_or_higher => '4.0.0'
+  version '0.5.0'
+  requires_redmine :version_or_higher => '5.0.0'
 
   settings :default => {}, :partial => 'settings/redmine_pgcommunityauth_settings'
 end
